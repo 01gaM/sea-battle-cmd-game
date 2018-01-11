@@ -96,7 +96,6 @@ int checkNeighbours(char map[FIELD_SIZE][FIELD_SIZE], int currI, int currJ) {
 		return 0;
 	}
 
-
 	return 1;//точка не пересекается с соседними
 
 }
@@ -132,7 +131,7 @@ int addShip(char map[FIELD_SIZE][FIELD_SIZE], struct Coordinate b, struct Coordi
 	return 1;//success
 }
 
-int getShipLen(struct Coordinate b, struct Coordinate e) {
+int getShipLen(struct Coordinate b, struct Coordinate e) {//получаем длину корабля
 	int s1 = e.ch - b.ch;
 	int s2 = e.num - b.num;
 	if (s1 > s2) {
@@ -145,10 +144,6 @@ int getShipLen(struct Coordinate b, struct Coordinate e) {
 
 
 void fillBotField(char map[FIELD_SIZE][FIELD_SIZE]) {
-	//int currI;
-	int currJ;
-	int endI;
-	int endJ;
 	struct Coordinate begin;
 	struct Coordinate end;
 	srand(time(NULL));//инициализация rand
@@ -177,8 +172,6 @@ void fillBotField(char map[FIELD_SIZE][FIELD_SIZE]) {
 						botShipsCount[currType]--;//убираем корабль из списка доступных
 					}
 				}
-				//printField(map);
-				//printShipsCount(botShipsCount);
 			}
 		}
 	}
@@ -390,7 +383,7 @@ void destroyShip(struct Coordinate aim, char field[FIELD_SIZE][FIELD_SIZE], int 
 		if (c2 + 1 <= 9) {
 			field[c1][c2 + 1] = '.';
 		}
-		if ((c1 - 1 >= 0) && (field[c1-1][c2] != '*')) {
+		if ((c1 - 1 >= 0) && (field[c1 - 1][c2] != '*')) {
 			field[c1 - 1][c2] = '.';
 			if (c2 - 1 >= 0) {
 				field[c1 - 1][c2 - 1] = '.';
@@ -399,7 +392,7 @@ void destroyShip(struct Coordinate aim, char field[FIELD_SIZE][FIELD_SIZE], int 
 				field[c1 - 1][c2 + 1] = '.';
 			}
 		}
-		if ((c1 + 1 <= 9) && (field[c1+1][c2] != '*')){
+		if ((c1 + 1 <= 9) && (field[c1 + 1][c2] != '*')) {
 			field[c1 + 1][c2] = '.';
 			if (c2 - 1 >= 0) {
 				field[c1 + 1][c2 - 1] = '.';
@@ -416,7 +409,7 @@ void destroyShip(struct Coordinate aim, char field[FIELD_SIZE][FIELD_SIZE], int 
 int nextTurn(struct Coordinate aim, char field[FIELD_SIZE][FIELD_SIZE], int shipCount[]) {
 	///если в соседних клетках не все части корабля повреждены, то заменяем клетку на "x"
 	//если в соседних клетках все части корабля повреждены(или он типа 1), то заменяем все клетки корабля на "*"
-	
+
 	int c1 = aim.ch - 'A';
 	int c2 = aim.num - 1;
 
@@ -440,9 +433,7 @@ int nextTurn(struct Coordinate aim, char field[FIELD_SIZE][FIELD_SIZE], int ship
 		return 3;//game over
 	}
 	return 2;//корабль 'убит'
-} 
-
-
+}
 
 
 
@@ -455,38 +446,17 @@ void printGameSpace(char player1[FIELD_SIZE][FIELD_SIZE], char player2[FIELD_SIZ
 	printShipsCount(botCount);
 }
 
-/*
-void botTurn(char enemyField[FIELD_SIZE][FIELD_SIZE], char field[FIELD_SIZE][FIELD_SIZE], int botShipCount[], int playerShipCount[]) {
-	//////////////////rand стратегия
-	///test 1.0
-	struct Coordinate aim;
-	srand(time(NULL));// инициализация функции rand значением функции time
-	aim.num = rand() % 9 + 1;
-	aim.ch = 'A' + rand() % 9;
-	while ((enemyField[aim.ch - 'A'][aim.num - 1] != 'o') && (enemyField[aim.ch - 'A'][aim.num - 1] != ' ')) { /////////исключение повторного выбора цели
-		aim.num = rand() % 9 + 1;
-		aim.ch = 'A' + rand() % 9;
-	}
-	printf_s("\n%c%d\n", aim.ch, aim.num);
-	int x = nextTurn(aim, enemyField, playerShipCount);
-	printGameSpace(enemyField, field, botShipCount, playerShipCount);
-	if ((x == 1) || (x == 2)) {//повторный ход, если попал
-		botTurn(enemyField, field, botShipCount, playerShipCount);
-	}
-}*/
-
-
 
 
 int hitTarget(struct Coordinate target, char field[FIELD_SIZE][FIELD_SIZE], int shipCount[]) {
-	
+
 	//верх
 	struct Coordinate aim;
 	aim.num = target.num;
 	aim.ch = target.ch - 1;
-	int x;
-	
-	if ((aim.ch - 'A' >= 0) && ((field[aim.ch - 'A'][aim.num - 1] == 'o') || (field[aim.ch - 'A'][aim.num - 1] == ' '))){
+	int x;//результат хода
+
+	if ((aim.ch - 'A' >= 0) && ((field[aim.ch - 'A'][aim.num - 1] == 'o') || (field[aim.ch - 'A'][aim.num - 1] == ' '))) {
 		x = nextTurn(aim, field, shipCount);
 		printf_s("\n%d%c\n", aim.num, aim.ch);
 		while ((x == 1) && (aim.ch - 'A' - 1 >= 0)) {
@@ -499,10 +469,10 @@ int hitTarget(struct Coordinate target, char field[FIELD_SIZE][FIELD_SIZE], int 
 		}
 		return -1;//корабль не полностью разрушен
 	}
-	
+
 	//низ
 	aim.ch = target.ch + 1;
-	if ((aim.ch - 'A' <= 9)&&((field[aim.ch - 'A'][aim.num - 1] == 'o') || (field[aim.ch - 'A'][aim.num - 1] == ' '))) {
+	if ((aim.ch - 'A' <= 9) && ((field[aim.ch - 'A'][aim.num - 1] == 'o') || (field[aim.ch - 'A'][aim.num - 1] == ' '))) {
 		x = nextTurn(aim, field, shipCount);
 		printf_s("\n%d%c\n", aim.num, aim.ch);
 		while ((x == 1) && (aim.ch - 'A' + 1 <= 9)) {
@@ -533,7 +503,7 @@ int hitTarget(struct Coordinate target, char field[FIELD_SIZE][FIELD_SIZE], int 
 	}
 	//право
 	aim.num = target.num + 1;
-	if ((aim.num <= 10) && ((field[aim.ch - 'A'][aim.num - 1] == 'o') || (field[aim.ch - 'A'][aim.num - 1] == ' '))){//<= 9
+	if ((aim.num <= 10) && ((field[aim.ch - 'A'][aim.num - 1] == 'o') || (field[aim.ch - 'A'][aim.num - 1] == ' '))) {//<= 9
 		x = nextTurn(aim, field, shipCount);
 		printf_s("\n%d%c\n", aim.num, aim.ch);
 		while ((x == 1) && (aim.num + 1 <= 10)) {
@@ -549,13 +519,12 @@ int hitTarget(struct Coordinate target, char field[FIELD_SIZE][FIELD_SIZE], int 
 }
 
 int search(char field[FIELD_SIZE][FIELD_SIZE], int shipCount[], struct Coordinate* aim) {
-	//struct Coordinate aim;
 	int currX = 3;
 	int x;
 	int currY = 0;
-	while (currY < 10){//первые диагонали(поиск корабля длины 4)
-		aim -> ch = currX + 'A';
-		aim -> num = currY + 1;
+	while (currY < 10) {//первые диагонали(поиск корабля длины 4)
+		aim->ch = currX + 'A';
+		aim->num = currY + 1;
 		x = nextTurn(*aim, field, shipCount);
 		if (x != -1) {
 			printf_s("\n%d%c\n", aim->num, aim->ch);
@@ -576,14 +545,14 @@ int search(char field[FIELD_SIZE][FIELD_SIZE], int shipCount[], struct Coordinat
 	currX = 1;
 	currY = 0;
 	while (currY < 10) {//вторые диагонали (поиск кораблей длины 3 и 2)
-		aim -> ch = currX + 'A';
-		aim -> num = currY + 1;
+		aim->ch = currX + 'A';
+		aim->num = currY + 1;
 		x = nextTurn(*aim, field, shipCount);
 		if (x != -1) {
 			printf_s("\n%d%c\n", aim->num, aim->ch);
 		}
 		if ((x != -1) && (x != 2)) {//продолжаем поиск, если убили корабль или посетили уже проверенную клетку
-			
+
 			return x;
 		}
 		if (currX + 4 < 10) {
@@ -598,22 +567,21 @@ int search(char field[FIELD_SIZE][FIELD_SIZE], int shipCount[], struct Coordinat
 	for (int i = 0; i < 10; i++) {//поиск кораблей длины 1
 		for (int j = 0; j < 10; j++) {
 			if ((field[i][j] == 'o') || (field[i][j] == ' ')) {
-				aim -> ch = i + 'A';
-				aim -> num = j + 1;
+				aim->ch = i + 'A';
+				aim->num = j + 1;
 				x = nextTurn(*aim, field, shipCount);
 				printf_s("\n%d%c\n", aim->num, aim->ch);
-				if ((x != -1)&&(x != 2)) {//продолжаем поиск, если убили корабль или посетили уже проверенную клетку
+				if ((x != -1) && (x != 2)) {//продолжаем поиск, если убили корабль или посетили уже проверенную клетку
 					return x;
 				}
-				
+
 			}
 		}
 	}
 }
 
 struct Coordinate botTurn(char enemyField[FIELD_SIZE][FIELD_SIZE], char field[FIELD_SIZE][FIELD_SIZE], int botShipCount[], int playerShipCount[], struct Coordinate currAim) {
-	///test 3.0
-	int y = 0;//инициализируем y
+	int y = 0;//результат добивания корабля
 	int x;
 	if ((currAim.ch == '0') && (currAim.num == 0)) {//если нет текущей цели
 		x = search(enemyField, playerShipCount, &currAim);//находим её
@@ -621,7 +589,7 @@ struct Coordinate botTurn(char enemyField[FIELD_SIZE][FIELD_SIZE], char field[FI
 	else {
 		x = 1;
 	}
-	
+
 	if (x == 1) {//если есть попадание(есть цель)
 		y = hitTarget(currAim, enemyField, playerShipCount);//пытаемся добить этот корабль
 	}
@@ -629,42 +597,64 @@ struct Coordinate botTurn(char enemyField[FIELD_SIZE][FIELD_SIZE], char field[FI
 		currAim.ch = '0';//обнуляем текущую цель, т.к. попадание мимо
 		currAim.num = 0;
 	}
-	printGameSpace(enemyField, field, botShipCount, playerShipCount);
+
 	if (y == 1) {//если цель уничтожена
 		currAim.ch = '0';//обнуляем текущую цель
 		currAim.num = 0;
-		return botTurn(enemyField, field, botShipCount, playerShipCount, currAim);//повтор хода т.к. попадание   /////////////////rerturn
+		return botTurn(enemyField, field, botShipCount, playerShipCount, currAim);//повтор хода т.к. попадание 
 	}
+	printGameSpace(enemyField, field, botShipCount, playerShipCount);
 	//если не уничтожена, то сохраняем текущую цель без изменений
 	return currAim;
 }
 
-/////////////////////////////////////////////////////
 
 struct Coordinate getCoordinate(char field[FIELD_SIZE][FIELD_SIZE]) {
 	struct Coordinate c;
+	char ch = '0';//символ после координат
 	int x = scanf_s("%d%c", &c.num, &c.ch);
-	while ((x == 0) || (c.ch < 'A') || (c.ch > 'J') || (c.num < 1) || (c.num > 10)) {
+	if (c.ch != '\n') {//если было введено не только число
+		ch = getchar();//получаем символ после введённых координат
+	}
+	while ((c.ch < 'A') || (c.ch > 'J') || (c.num < 1) || (c.num > 10) || (ch != '\n') || (x != 2)) {
 		printf_s("\nКоординаты корабля должны состоять из целого числа от 1 до 10 и буквы от 'A' до 'J'.\nВведите другие координаты: ");
-		// Discard everything upto and including the newline.
-		while ((x = getchar()) != EOF && x != '\n');
+		//сбрасываем введённые ранее данные
+		if ((ch != '\n') && (c.ch != '\n') || (x != 2)) {//если было введено что-то кроме числа и буквы
+			x = getchar();
+			while (x != '\n') {
+				x = getchar();
+			}
+		}
+		//считываем новые данные
 		x = scanf_s("%d%c", &c.num, &c.ch);
+		if (c.ch != '\n') {//если было введено не только число
+			ch = getchar();//получаем символ после введённых координат
+		}
+		else {
+			ch = '0';//"обнуляем" символ
+		}
 	}
 	if ((field[c.ch - 'A'][c.num - 1] != 'o') && (field[c.ch - 'A'][c.num - 1] != ' ')) {
-		printf_s("\nДанная точка уже проверена. Введите новую координату: ");
+		printf_s("\nДанная точка уже проверена. Введите новые координаты: ");
 		return getCoordinate(field);
 	}
 	return c;
 }
 
+
 int getType() {
 	int currType;
-	int x = scanf_s("%d", &currType);
-	while ((currType < 1) || (currType > 4)) {
+	char ch;
+	int x = scanf_s("%d%c", &currType, &ch);
+	while ((x != 2) || (currType < 1) || (currType > 4) || (ch != '\n')) {//если число не является допустимым для типа или было введено не только число
 		printf_s("Недопустимое значение типа. Введите число от 1 до 4: ");
-		// Discard everything upto and including the newline.
-		while ((x = getchar()) != EOF && x != '\n');
-		scanf_s("%d", &currType);
+		if ((ch != '\n') || (x != 2)) {//если ранее было введено не только одно число (неверный формат введённых данных)
+			x = getchar();
+			while (x != '\n') {//сбрасываем всё введённое ранее
+				x = getchar();
+			}
+		}
+		x = scanf_s("%d%c", &currType, &ch);//считываем новые данные
 	}
 	return currType;
 }
