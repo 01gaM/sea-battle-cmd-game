@@ -3,6 +3,14 @@
 #include <locale.h>
 #include <stdlib.h>
 
+void initField(enum squareStatus field [FIELD_SIZE][FIELD_SIZE]) {
+	for (int i = 0; i < FIELD_SIZE; i++) {
+		for (int j = 0; j < FIELD_SIZE; j++) {
+			field[i][j] = EMPTY;//"обнуляем" поле
+		}
+	}
+}
+
 void printBorder() {
 	int stripeLen = 41;
 	printf_s("\n  ");
@@ -11,8 +19,7 @@ void printBorder() {
 	}
 }
 
-void printField(char field[FIELD_SIZE][FIELD_SIZE], int mode) {
-
+void printField(enum squareStatus field[FIELD_SIZE][FIELD_SIZE], int mode) {
 	char ch = 'A';
 	printf_s("  ");
 	for (int i = 1; i <= FIELD_SIZE; i++) {
@@ -23,11 +30,27 @@ void printField(char field[FIELD_SIZE][FIELD_SIZE], int mode) {
 	for (int i = 0; i < FIELD_SIZE; i++) {
 		printf_s("%c |", ch);
 		for (int j = 0; j < FIELD_SIZE; j++) {
-			if ((mode == 2) && (field[i][j] == 'o')) {
+			if ((mode == 2) && (field[i][j] == SHIP_PART)) {
 				printf_s("   |");
 			}
 			else {
-				printf_s(" %c |", field[i][j]);
+				switch (field[i][j]) {
+				case EMPTY:
+					printf_s("   |");
+					break;
+				case CHECKED:
+					printf_s(" . |");
+					break;
+				case SHIP_PART:
+					printf_s(" o |");
+					break;
+				case DAMAGED:
+					printf_s(" x |");
+					break;
+				case DESTROYED:
+					printf_s(" * |");
+					break;
+				}
 			}
 		}
 		printBorder();
@@ -55,80 +78,43 @@ void printShipsCount(int shipsCount[]) {
 	}
 }
 
-
-
-int checkNeighbours(char map[FIELD_SIZE][FIELD_SIZE], int currI, int currJ) {
-	if (map[currI][currJ] != ' ') {
-		return 0;
+int checkNeighbours(enum squareStatus map[FIELD_SIZE][FIELD_SIZE], int currI, int currJ) {	
+	for (int i = currI-1; i <= currI+1; i++) {
+		for (int j = currJ-1; j <= currJ+1; j++) {
+			if ((i >= 0) && (i <= 9) && (j >= 0) && (j <= 9) && (map[i][j] != EMPTY)) {
+				return 0;
+			}
+		}
 	}
-	////////check top
-	if ((map[currI - 1][currJ] != ' ') && (currI > 0)) {
-		return 0;
-	}
-	////////check bot
-	if ((map[currI + 1][currJ] != ' ') && (currI < 9)) {
-		return 0;
-	}
-	////////check left
-	if ((map[currI][currJ - 1] != ' ') && (currJ > 0)) {
-		return 0;
-	}
-	////////check right
-	if ((map[currI][currJ + 1] != ' ') && (currJ < 9)) {
-		return 0;
-	}
-	///////////////диагонали
-
-	////левый верхний угол
-	if ((map[currI - 1][currJ - 1] != ' ') && (currI > 0) && (currJ > 0)) {
-		return 0;
-	}
-	///левый нижний угол
-	if ((map[currI + 1][currJ - 1] != ' ') && (currI < 9) && (currJ > 0)) {
-		return 0;
-	}
-	////правый верхний угол
-	if ((map[currI - 1][currJ + 1] != ' ') && (currI > 0) && (currJ < 9)) {
-		return 0;
-	}
-	///правый нижний угол
-	if ((map[currI + 1][currJ + 1] != ' ') && (currI < 9) && (currJ < 9)) {
-		return 0;
-	}
-
 	return 1;//точка не пересекается с соседними
-
 }
 
-
-int addShip(char map[FIELD_SIZE][FIELD_SIZE], struct Coordinate b, struct Coordinate e, int type) {//добавляет корабль
-	if (type == 1) {
+int addShip(enum squareStatus map[FIELD_SIZE][FIELD_SIZE], struct Coordinate b, struct Coordinate e, enum shipType type) {//добавляет корабль
+	if (type == TYPE1) {
 		int num2 = b.ch - 'A';
 		if (checkNeighbours(map, num2, b.num - 1) == 0) {
-			return 0;
+			return 0;//нельзя поставить корабль в этом месте
 		}
-		map[num2][b.num - 1] = 'o';
+		map[num2][b.num - 1] = SHIP_PART;//добавляем корабль
 	}
 	else {
 		int num1 = b.ch - 'A';
 		int num2 = e.ch - 'A';
 
-
 		for (int i = num1; i <= num2; i++) {
 			for (int j = b.num; j <= e.num; j++) {
 				if (checkNeighbours(map, i, j - 1) == 0) {
-					return 0;
+					return 0;//нельзя поставить корабль в этом месте
 				}
 			}
 		}
-
 		for (int i = num1; i <= num2; i++) {
 			for (int j = b.num; j <= e.num; j++) {
-				map[i][j - 1] = 'o';
+				map[i][j - 1] = SHIP_PART;//добавляем корабль
 			}
 		}
 	}
-	return 1;//success
+	return 1;//корабль был добавлен на поле
 }
 
 int getShipLen(struct Coordinate b, struct Coordinate e) {//получаем длину корабля
@@ -141,9 +127,7 @@ int getShipLen(struct Coordinate b, struct Coordinate e) {//получаем длину кораб
 
 }
 
-
-
-void fillBotField(char map[FIELD_SIZE][FIELD_SIZE]) {
+void fillBotField(enum squareStatus map[FIELD_SIZE][FIELD_SIZE]) {
 	struct Coordinate begin;
 	struct Coordinate end;
 	srand(time(NULL));//инициализация rand
@@ -151,9 +135,9 @@ void fillBotField(char map[FIELD_SIZE][FIELD_SIZE]) {
 	while (getSumm(botShipsCount, 4) != 0) {
 		for (int currType = 3; currType >= 0; currType--) {
 			while (botShipsCount[currType] > 0) {//если корабли этого типа не закончились
-				begin.ch = rand() % 10 + 'A';//'A'-'J'
-				begin.num = rand() % 10 + 1;//1-10
-				end.ch = '-';
+				begin.ch = rand() % 10 + 'A';//значения от 'A' до 'J'
+				begin.num = rand() % 10 + 1;//значения от 1 до 10
+				end.ch = '-';//"обнуляем координаты конца"
 				end.num = -1;
 				int currI = begin.ch - 'A';
 				if (currI + currType < 9) {
@@ -178,251 +162,175 @@ void fillBotField(char map[FIELD_SIZE][FIELD_SIZE]) {
 
 }
 
-int isKilled(struct Coordinate aim, char field[FIELD_SIZE][FIELD_SIZE]) {
+int checkCoordinate(int c1, int c2,  int vertical, int horizontal, enum squareStatus field[FIELD_SIZE][FIELD_SIZE]) {
+	int checkCoordinate1 = c1 + vertical;
+	int checkCoordinate2 = c2 + horizontal;
+	while ((checkCoordinate1 >= 0) && (checkCoordinate1 <= 9) && (checkCoordinate2 >= 0) && (checkCoordinate2 <= 9) && (field[checkCoordinate1][checkCoordinate2] != EMPTY) && (field[checkCoordinate1][checkCoordinate2] != CHECKED)) {//пока не дошли до конца поля или до конца текушего корабля
+		if (field[checkCoordinate1][checkCoordinate2] == SHIP_PART) {
+			return 0;//найдена неповреждённая часть корабля
+		}
+		checkCoordinate1 += vertical;
+		checkCoordinate2 += horizontal;
+	}
+	return -1;//не найдена неповреждённая часть корабля
+}
+
+int isKilled(struct Coordinate aim, enum squareStatus field[FIELD_SIZE][FIELD_SIZE]) {
 	int c1 = aim.ch - 'A';
 	int c2 = aim.num - 1;
-	int checkCoordinate1;
-	int checkCoordinate2;
-
-	//проверяем верх
-	checkCoordinate1 = c1 - 1;
-
-	while ((checkCoordinate1 >= 0) && (field[checkCoordinate1][c2] != ' ') && (field[checkCoordinate1][c2] != '.')) {//пока не дошли до конца поля или до конца текушего корабля
-		if (field[checkCoordinate1][c2] == 'o') {
-			return 0;//найдена неповреждённая часть корабля
-		}
-		checkCoordinate1--;
-	}
-
-
-	//проверяем низ
-	checkCoordinate1 = c1 + 1;
-
-	while ((checkCoordinate1 <= 9) && (field[checkCoordinate1][c2] != ' ') && (field[checkCoordinate1][c2] != '.')) {//пока не дошли до конца поля или до конца текушего корабля
-		if (field[checkCoordinate1][c2] == 'o') {
-			return 0;//найдена неповреждённая часть корабля
-		}
-		checkCoordinate1++;
-	}
-
-
-	//проверяем лево
-	checkCoordinate2 = c2 - 1;
-
-	while ((checkCoordinate2 >= 0) && (field[c1][checkCoordinate2] != ' ') && (field[c1][checkCoordinate2] != '.')) {//пока не дошли до конца поля или до конца текушего корабля
-		if (field[c1][checkCoordinate2] == 'o') {
-			return 0;//найдена неповреждённая часть корабля
-		}
-		checkCoordinate2--;
-	}
-
-	//проверяем право
-	checkCoordinate2 = c2 + 1;
-
-	while ((checkCoordinate2 <= 9) && (field[c1][checkCoordinate2] != ' ') && (field[c1][checkCoordinate2] != '.')) {//пока не дошли до конца поля или до конца текушего корабля
-		if (field[c1][checkCoordinate2] == 'o') {
-			return 0;//найдена неповреждённая часть корабля
-		}
-		checkCoordinate2++;
+	//проверяем верх, низ, лево и право на наличие неповреждённых частей корабля
+	if ((checkCoordinate(c1, c2, -1, 0, field) == 0) || (checkCoordinate(c1, c2, 1, 0, field) == 0) || (checkCoordinate(c1, c2, 0, -1, field) == 0) || (checkCoordinate(c1, c2, 0, 1, field) == 0)) {
+		return 0;
 	}
 	return 1;//корабль убит
 }
 
-void destroyShip(struct Coordinate aim, char field[FIELD_SIZE][FIELD_SIZE], int shipCount[]) {
+int destroyLine(int c1, int c2, int vertical, int horizontal, enum squareStatus field[FIELD_SIZE][FIELD_SIZE], int isHorizontal, int* shipLen) {
+	int checkCoordinate1 = c1 + vertical;
+	int checkCoordinate2 = c2 + horizontal;
+	while ((checkCoordinate1 >= 0) && (checkCoordinate1 <= 9) && (checkCoordinate2 >= 0) && (checkCoordinate2 <= 9) && (field[checkCoordinate1][checkCoordinate2] != EMPTY) && (field[checkCoordinate1][checkCoordinate2] != CHECKED)) {//пока не дошли до конца поля или до конца текушего корабля
+		if (field[checkCoordinate1][checkCoordinate2] == DAMAGED) {
+			field[checkCoordinate1][checkCoordinate2] = DESTROYED;
+			if (isHorizontal == 0) {//ход по вертикали
+				if (checkCoordinate2 - 1 >= 0) {
+					field[checkCoordinate1][checkCoordinate2 - 1] = CHECKED;
+				}
+				if (checkCoordinate2 + 1 <= 9) {
+					field[checkCoordinate1][checkCoordinate2 + 1] = CHECKED;
+				}
+
+				if ((checkCoordinate1 + vertical >= 0) && ((field[checkCoordinate1 + vertical][checkCoordinate2] == EMPTY) || (field[checkCoordinate1 + vertical][checkCoordinate2] == CHECKED))) {
+					field[checkCoordinate1 + vertical][checkCoordinate2] = CHECKED;
+					if (checkCoordinate2 - 1 >= 0) {
+						field[checkCoordinate1 + vertical][checkCoordinate2 - 1] = CHECKED;
+					}
+					if (checkCoordinate2 + 1 <= 9) {
+						field[checkCoordinate1 + vertical][checkCoordinate2 + 1] = CHECKED;
+					}
+				}
+			}
+			else {//ход по горизонтали
+				if (checkCoordinate1 - 1 >= 0) {
+					field[checkCoordinate1 - 1][checkCoordinate2] = CHECKED;
+				}
+				if (checkCoordinate1 + 1 <= 9) {
+					field[checkCoordinate1 + 1][checkCoordinate2] = CHECKED;
+				}
+				if ((checkCoordinate2 + horizontal >= 0) && ((field[checkCoordinate1][checkCoordinate2 + horizontal] == EMPTY) || (field[checkCoordinate1][checkCoordinate2 + horizontal] == CHECKED))) {
+					field[checkCoordinate1][checkCoordinate2 + horizontal] = CHECKED;
+					if (checkCoordinate1 - 1 >= 0) {
+						field[checkCoordinate1 - 1][checkCoordinate2 + horizontal] = CHECKED;
+					}
+					if (checkCoordinate1 + 1 <= 9) {
+						field[checkCoordinate1 + 1][checkCoordinate2 + horizontal] = CHECKED;
+					}
+				}
+			}
+			*shipLen = *shipLen + 1;
+		}
+		checkCoordinate1 += vertical;
+		checkCoordinate2 += horizontal;
+	}
+}
+
+void destroyShip(struct Coordinate aim, enum squareStatus field[FIELD_SIZE][FIELD_SIZE], int shipCount[]) {
 	int c1 = aim.ch - 'A';
 	int c2 = aim.num - 1;
 	int checkCoordinate1;
 	int checkCoordinate2;
-	int isHorizontal = 1;
+	int isHorizontal;
 	int shipLen = 0;//длина корабля - 1
-	field[c1][c2] = '*';
-
-	//проверяем верх
-	checkCoordinate1 = c1 - 1;
-
-	while ((checkCoordinate1 >= 0) && (field[checkCoordinate1][c2] != ' ') && (field[checkCoordinate1][c2] != '.')) {//пока не дошли до конца поля или до конца текушего корабля
-		if (field[checkCoordinate1][c2] == 'x') {
-			isHorizontal = 0;
-			field[checkCoordinate1][c2] = '*';
-			if (c2 - 1 >= 0) {
-				field[checkCoordinate1][c2 - 1] = '.';
-			}
-			if (c2 + 1 <= 9) {
-				field[checkCoordinate1][c2 + 1] = '.';
-			}
-			if ((checkCoordinate1 - 1 >= 0) && ((field[checkCoordinate1 - 1][c2] == ' ') || (field[checkCoordinate1 - 1][c2] == '.'))) {
-				field[checkCoordinate1 - 1][c2] = '.';
-				if (c2 - 1 >= 0) {
-					field[checkCoordinate1 - 1][c2 - 1] = '.';
-				}
-				if (c2 + 1 <= 9) {
-					field[checkCoordinate1 - 1][c2 + 1] = '.';
-				}
-			}
-			shipLen++;
-		}
-		checkCoordinate1--;
+	field[c1][c2] = DESTROYED;
+	if (((field[c1 - 1][c2] == DAMAGED) && (c1 - 1 >= 0)) || ((field[c1 + 1][c2] == DAMAGED) && (c1 + 1 <= 9))) {
+		isHorizontal = 0;
 	}
-
-
-
-	//проверяем низ
-	checkCoordinate1 = c1 + 1;
-
-	while ((checkCoordinate1 <= 9) && (field[checkCoordinate1][c2] != ' ') && (field[checkCoordinate1][c2] != '.')) {//пока не дошли до конца поля или до конца текушего корабля
-		if (field[checkCoordinate1][c2] == 'x') {
-			isHorizontal = 0;
-			field[checkCoordinate1][c2] = '*';
-			if (c2 - 1 >= 0) {
-				field[checkCoordinate1][c2 - 1] = '.';
-			}
-			if (c2 + 1 <= 9) {
-				field[checkCoordinate1][c2 + 1] = '.';
-			}
-			if ((checkCoordinate1 + 1 <= 9) && ((field[checkCoordinate1 + 1][c2] == ' ') || (field[checkCoordinate1 + 1][c2] == '.'))) {
-				field[checkCoordinate1 + 1][c2] = '.';
-				if (c2 - 1 >= 0) {
-					field[checkCoordinate1 + 1][c2 - 1] = '.';
-				}
-				if (c2 + 1 <= 9) {
-					field[checkCoordinate1 + 1][c2 + 1] = '.';
-				}
-			}
-			shipLen++;
-		}
-		checkCoordinate1++;
+	else {
+		isHorizontal = 1;
 	}
-
-	if (isHorizontal == 1) {
-		//проверяем лево
-		checkCoordinate2 = c2 - 1;
-
-		while ((checkCoordinate2 >= 0) && (field[c1][checkCoordinate2] != ' ') && (field[c1][checkCoordinate2] != '.')) {//пока не дошли до конца поля или до конца текушего корабля
-			if (field[c1][checkCoordinate2] == 'x') {
-				field[c1][checkCoordinate2] = '*';
-				if (c1 - 1 >= 0) {
-					field[c1 - 1][checkCoordinate2] = '.';
-				}
-				if (c1 + 1 <= 9) {
-					field[c1 + 1][checkCoordinate2] = '.';
-				}
-				if ((checkCoordinate2 - 1 >= 0) && ((field[c1][checkCoordinate2 - 1] == ' ') || (field[c1][checkCoordinate2 - 1] == '.'))) {
-					field[c1][checkCoordinate2 - 1] = '.';
-					if (c1 - 1 >= 0) {
-						field[c1 - 1][checkCoordinate2 - 1] = '.';
-					}
-					if (c1 + 1 <= 9) {
-						field[c1 + 1][checkCoordinate2 - 1] = '.';
-					}
-				}
-				shipLen++;
-			}
-			checkCoordinate2--;
-		}
-
-		//проверяем право
-		checkCoordinate2 = c2 + 1;
-
-		while ((checkCoordinate2 <= 9) && (field[c1][checkCoordinate2] != ' ') && (field[c1][checkCoordinate2] != '.')) {//пока не дошли до конца поля или до конца текушего корабля
-			if (field[c1][checkCoordinate2] == 'x') {
-				field[c1][checkCoordinate2] = '*';
-				if (c1 - 1 >= 0) {
-					field[c1 - 1][checkCoordinate2] = '.';
-				}
-				if (c1 + 1 <= 9) {
-					field[c1 + 1][checkCoordinate2] = '.';
-				}
-				if ((checkCoordinate2 + 1 <= 9) && ((field[c1][checkCoordinate2 + 1] == ' ') || (field[c1][checkCoordinate2 + 1] == '.'))) {
-					field[c1][checkCoordinate2 + 1] = '.';
-					if (c1 - 1 >= 0) {
-						field[c1 - 1][checkCoordinate2 + 1] = '.';
-					}
-					if (c1 + 1 <= 9) {
-						field[c1 + 1][checkCoordinate2 + 1] = '.';
-					}
-				}
-				shipLen++;
-			}
-			checkCoordinate2++;
-		}
+	if (isHorizontal == 0) {
+		//разрушаем верх
+		destroyLine(c1, c2, -1, 0, field, isHorizontal, &shipLen);
+		//разрушаем низ
+		destroyLine(c1, c2, 1, 0, field, isHorizontal, &shipLen);
 	}
-	shipCount[shipLen]--;
-
-
+	else {
+		//разрушаем лево
+		destroyLine(c1, c2, 0, -1, field, isHorizontal, &shipLen);
+		//разрушаем право
+		destroyLine(c1, c2, 0, 1, field, isHorizontal, &shipLen);
+	}
+	shipCount[shipLen]--;//убираем корабль из списка оставшихся
 	//отмечаем смежные с убитым кораблём клетки как пустые
 	if (isHorizontal == 1) {
 		if (c1 - 1 >= 0) {
-			field[c1 - 1][c2] = '.';
+			field[c1 - 1][c2] = CHECKED;
 		}
 		if (c1 + 1 <= 9) {
-			field[c1 + 1][c2] = '.';
+			field[c1 + 1][c2] = CHECKED;
 		}
-		if ((c2 - 1 >= 0) && (field[c1][c2 - 1] != '*')) {
-			field[c1][c2 - 1] = '.';
+		if ((c2 - 1 >= 0) && (field[c1][c2 - 1] != DESTROYED)) {
+			field[c1][c2 - 1] = CHECKED;
 			if (c1 - 1 >= 0) {
-				field[c1 - 1][c2 - 1] = '.';
+				field[c1 - 1][c2 - 1] = CHECKED;
 			}
 			if (c1 + 1 <= 9) {
-				field[c1 + 1][c2 - 1] = '.';
+				field[c1 + 1][c2 - 1] = CHECKED;
 			}
 		}
-		if ((c2 + 1 <= 9) && (field[c1][c2 + 1] != '*')) {
-			field[c1][c2 + 1] = '.';
+		if ((c2 + 1 <= 9) && (field[c1][c2 + 1] != DESTROYED)) {
+			field[c1][c2 + 1] = CHECKED;
 			if (c1 - 1 >= 0) {
-				field[c1 - 1][c2 + 1] = '.';
+				field[c1 - 1][c2 + 1] = CHECKED;
 			}
 			if (c1 + 1 <= 9) {
-				field[c1 + 1][c2 + 1] = '.';
+				field[c1 + 1][c2 + 1] = CHECKED;
 			}
 		}
 	}
 	else {
 		if (c2 - 1 >= 0) {
-			field[c1][c2 - 1] = '.';
+			field[c1][c2 - 1] = CHECKED;
 		}
 		if (c2 + 1 <= 9) {
-			field[c1][c2 + 1] = '.';
+			field[c1][c2 + 1] = CHECKED;
 		}
-		if ((c1 - 1 >= 0) && (field[c1 - 1][c2] != '*')) {
-			field[c1 - 1][c2] = '.';
+		if ((c1 - 1 >= 0) && (field[c1 - 1][c2] != DESTROYED)) {
+			field[c1 - 1][c2] = CHECKED;
 			if (c2 - 1 >= 0) {
-				field[c1 - 1][c2 - 1] = '.';
+				field[c1 - 1][c2 - 1] = CHECKED;
 			}
 			if (c2 + 1 <= 9) {
-				field[c1 - 1][c2 + 1] = '.';
+				field[c1 - 1][c2 + 1] = CHECKED;
 			}
 		}
-		if ((c1 + 1 <= 9) && (field[c1 + 1][c2] != '*')) {
-			field[c1 + 1][c2] = '.';
+		if ((c1 + 1 <= 9) && (field[c1 + 1][c2] != DESTROYED)) {
+			field[c1 + 1][c2] = CHECKED;
 			if (c2 - 1 >= 0) {
-				field[c1 + 1][c2 - 1] = '.';
+				field[c1 + 1][c2 - 1] = CHECKED;
 			}
 			if (c2 + 1 <= 9) {
-				field[c1 + 1][c2 + 1] = '.';
+				field[c1 + 1][c2 + 1] = CHECKED;
 			}
 		}
 	}
 }
 
-
-
-int nextTurn(struct Coordinate aim, char field[FIELD_SIZE][FIELD_SIZE], int shipCount[]) {
+int nextTurn(struct Coordinate aim, enum squareStatus field[FIELD_SIZE][FIELD_SIZE], int shipCount[]) {
 	///если в соседних клетках не все части корабля повреждены, то заменяем клетку на "x"
 	//если в соседних клетках все части корабля повреждены(или он типа 1), то заменяем все клетки корабля на "*"
-
 	int c1 = aim.ch - 'A';
 	int c2 = aim.num - 1;
 
-	if (field[c1][c2] == ' ') {//попадание мимо
-		field[c1][c2] = '.';
+	if (field[c1][c2] == EMPTY) {//попадание мимо
+		field[c1][c2] = CHECKED;
 		return 0;
 	}
-	if (field[c1][c2] != 'o') {//повторный выбор клетки для атаки
+	if (field[c1][c2] != SHIP_PART) {//повторный выбор клетки для атаки
 		return -1;
 	}
 
 	if (isKilled(aim, field) == 0) {
-		field[c1][c2] = 'x';
+		field[c1][c2] = DAMAGED;
 		return 1;//корабль 'ранен'
 	}
 	else {
@@ -435,9 +343,7 @@ int nextTurn(struct Coordinate aim, char field[FIELD_SIZE][FIELD_SIZE], int ship
 	return 2;//корабль 'убит'
 }
 
-
-
-void printGameSpace(char player1[FIELD_SIZE][FIELD_SIZE], char player2[FIELD_SIZE][FIELD_SIZE], int botCount[], int playerCount[]) {
+void printGameSpace(enum squareStatus player1[FIELD_SIZE][FIELD_SIZE], enum squareStatus player2[FIELD_SIZE][FIELD_SIZE], int botCount[], int playerCount[]) {
 	printf_s("Ваше поле:\n");
 	printField(player1, 1);// 1 - игрок 1
 	printShipsCount(playerCount);
@@ -447,81 +353,58 @@ void printGameSpace(char player1[FIELD_SIZE][FIELD_SIZE], char player2[FIELD_SIZ
 }
 
 
+int hitLine(struct Coordinate aim, enum squareStatus field[FIELD_SIZE][FIELD_SIZE], int shipCount[], int vertical, int horizontal) {
+	int x;//результат хода
+	if ((aim.ch - 'A' >= 0) && (aim.ch - 'A' <= 9) && (aim.num > 0) && (aim.num <= 10) && ((field[aim.ch - 'A'][aim.num - 1] == SHIP_PART) || (field[aim.ch - 'A'][aim.num - 1] == EMPTY))) {
+		x = nextTurn(aim, field, shipCount);
+		printf_s("\n%d%c\n", aim.num, aim.ch);
+		while ((x == 1) && (aim.ch - 'A' + vertical >= 0) && (aim.ch - 'A' + vertical <= 9) && (aim.num + horizontal > 0) && (aim.num + horizontal <= 10)) {
+			aim.ch += vertical;
+			aim.num += horizontal;
+			x = nextTurn(aim, field, shipCount);
+			printf_s("\n%d%c\n", aim.num, aim.ch);
+		}
+		if (x == 2) {
+			return 1;//success
+		}
+		return -1;//корабль не полностью разрушен
+	}
+	return 0;
+}
 
-int hitTarget(struct Coordinate target, char field[FIELD_SIZE][FIELD_SIZE], int shipCount[]) {
-
-	//верх
+int hitTarget(struct Coordinate target, enum squareStatus field[FIELD_SIZE][FIELD_SIZE], int shipCount[]) {
 	struct Coordinate aim;
 	aim.num = target.num;
 	aim.ch = target.ch - 1;
 	int x;//результат хода
-
-	if ((aim.ch - 'A' >= 0) && ((field[aim.ch - 'A'][aim.num - 1] == 'o') || (field[aim.ch - 'A'][aim.num - 1] == ' '))) {
-		x = nextTurn(aim, field, shipCount);
-		printf_s("\n%d%c\n", aim.num, aim.ch);
-		while ((x == 1) && (aim.ch - 'A' - 1 >= 0)) {
-			aim.ch--;
-			x = nextTurn(aim, field, shipCount);
-			printf_s("\n%d%c\n", aim.num, aim.ch);
-		}
-		if (x == 2) {
-			return 1;//success
-		}
-		return -1;//корабль не полностью разрушен
+	//верх
+	x = hitLine(aim, field, shipCount, -1, 0);
+	if (x != 0) {
+		return x;
 	}
-
-	//низ
 	aim.ch = target.ch + 1;
-	if ((aim.ch - 'A' <= 9) && ((field[aim.ch - 'A'][aim.num - 1] == 'o') || (field[aim.ch - 'A'][aim.num - 1] == ' '))) {
-		x = nextTurn(aim, field, shipCount);
-		printf_s("\n%d%c\n", aim.num, aim.ch);
-		while ((x == 1) && (aim.ch - 'A' + 1 <= 9)) {
-			aim.ch++;
-			x = nextTurn(aim, field, shipCount);
-			printf_s("\n%d%c\n", aim.num, aim.ch);
-		}
-		if (x == 2) {
-			return 1;//success
-		}
-		return -1;//корабль не полностью разрушен
+	//низ
+	x = hitLine(aim, field, shipCount, 1, 0);
+	if (x != 0) {
+		return x;
 	}
-	//лево
-	aim.ch = target.ch;
 	aim.num = target.num - 1;
-	if ((aim.num > 0) && ((field[aim.ch - 'A'][aim.num - 1] == 'o') || (field[aim.ch - 'A'][aim.num - 1] == ' '))) {//>=0
-		x = nextTurn(aim, field, shipCount);
-		printf_s("\n%d%c\n", aim.num, aim.ch);
-		while ((x == 1) && (aim.num - 1 > 0)) {//aim.num - 2 >= 0
-			aim.num--;
-			x = nextTurn(aim, field, shipCount);
-			printf_s("\n%d%c\n", aim.num, aim.ch);
-		}
-		if (x == 2) {
-			return 1;//success
-		}
-		return -1;//корабль не полностью разрушен
+	aim.ch = target.ch;
+	//лево
+	x = hitLine(aim, field, shipCount, 0, -1);
+	if (x != 0) {
+		return x;
 	}
-	//право
 	aim.num = target.num + 1;
-	if ((aim.num <= 10) && ((field[aim.ch - 'A'][aim.num - 1] == 'o') || (field[aim.ch - 'A'][aim.num - 1] == ' '))) {//<= 9
-		x = nextTurn(aim, field, shipCount);
-		printf_s("\n%d%c\n", aim.num, aim.ch);
-		while ((x == 1) && (aim.num + 1 <= 10)) {
-			aim.num++;
-			x = nextTurn(aim, field, shipCount);
-			printf_s("\n%d%c\n", aim.num, aim.ch);
-		}
-		if (x == 2) {
-			return 1;//success
-		}
-		return -1;//корабль не полностью разрушен
+	//право
+	x = hitLine(aim, field, shipCount, 0, 1);
+	if (x != 0) {
+		return x;
 	}
 }
 
-int search(char field[FIELD_SIZE][FIELD_SIZE], int shipCount[], struct Coordinate* aim) {
-	int currX = 3;
+int checkDiagonal(int currX, int currY, struct Coordinate* aim, enum squareStatus field[FIELD_SIZE][FIELD_SIZE], int shipCount[]) {
 	int x;
-	int currY = 0;
 	while (currY < 10) {//первые диагонали(поиск корабля длины 4)
 		aim->ch = currX + 'A';
 		aim->num = currY + 1;
@@ -541,46 +424,37 @@ int search(char field[FIELD_SIZE][FIELD_SIZE], int shipCount[], struct Coordinat
 			currY++;
 		}
 	}
+	return -2;//выход из цикла
+}
 
-	currX = 1;
-	currY = 0;
-	while (currY < 10) {//вторые диагонали (поиск кораблей длины 3 и 2)
-		aim->ch = currX + 'A';
-		aim->num = currY + 1;
-		x = nextTurn(*aim, field, shipCount);
-		if (x != -1) {
-			printf_s("\n%d%c\n", aim->num, aim->ch);
-		}
-		if ((x != -1) && (x != 2)) {//продолжаем поиск, если убили корабль или посетили уже проверенную клетку
-
+int search(enum squareStatus field[FIELD_SIZE][FIELD_SIZE], int shipCount[], struct Coordinate* aim) {
+	int x;//результат хода
+	x = checkDiagonal(3, 0, aim, field, shipCount);//первые диагонали(поиск корабля длины 4)
+	if (x != -2) {
+		return x;
+	}
+	x = checkDiagonal(1, 0, aim, field, shipCount); {//вторые диагонали (поиск кораблей длины 3 и 2)
+		if (x != -2) {
 			return x;
 		}
-		if (currX + 4 < 10) {
-			currX += 4;
-		}
-		else {
-			currX--;
-			currX -= 4 * (int)(currX / 4);
-			currY++;
-		}
-	}
-	for (int i = 0; i < 10; i++) {//поиск кораблей длины 1
-		for (int j = 0; j < 10; j++) {
-			if ((field[i][j] == 'o') || (field[i][j] == ' ')) {
-				aim->ch = i + 'A';
-				aim->num = j + 1;
-				x = nextTurn(*aim, field, shipCount);
-				printf_s("\n%d%c\n", aim->num, aim->ch);
-				if ((x != -1) && (x != 2)) {//продолжаем поиск, если убили корабль или посетили уже проверенную клетку
-					return x;
-				}
+		for (int i = 0; i < 10; i++) {//поиск кораблей длины 1
+			for (int j = 0; j < 10; j++) {
+				if ((field[i][j] == SHIP_PART) || (field[i][j] == EMPTY)) {
+					aim->ch = i + 'A';
+					aim->num = j + 1;
+					x = nextTurn(*aim, field, shipCount);
+					printf_s("\n%d%c\n", aim->num, aim->ch);
+					if ((x != -1) && (x != 2)) {//продолжаем поиск, если убили корабль или посетили уже проверенную клетку
+						return x;
+					}
 
+				}
 			}
 		}
 	}
 }
 
-struct Coordinate botTurn(char enemyField[FIELD_SIZE][FIELD_SIZE], char field[FIELD_SIZE][FIELD_SIZE], int botShipCount[], int playerShipCount[], struct Coordinate currAim) {
+struct Coordinate botTurn(enum squareStatus enemyField[FIELD_SIZE][FIELD_SIZE], enum squareStatus field[FIELD_SIZE][FIELD_SIZE], int botShipCount[], int playerShipCount[], struct Coordinate currAim) {
 	int y = 0;//результат добивания корабля
 	int x;
 	if ((currAim.ch == '0') && (currAim.num == 0)) {//если нет текущей цели
@@ -608,8 +482,7 @@ struct Coordinate botTurn(char enemyField[FIELD_SIZE][FIELD_SIZE], char field[FI
 	return currAim;
 }
 
-
-struct Coordinate getCoordinate(char field[FIELD_SIZE][FIELD_SIZE]) {
+struct Coordinate getCoordinate(enum squareStatus field[FIELD_SIZE][FIELD_SIZE]) {
 	struct Coordinate c;
 	char ch = '0';//символ после координат
 	int x = scanf_s("%d%c", &c.num, &c.ch);
@@ -634,16 +507,15 @@ struct Coordinate getCoordinate(char field[FIELD_SIZE][FIELD_SIZE]) {
 			ch = '0';//"обнуляем" символ
 		}
 	}
-	if ((field[c.ch - 'A'][c.num - 1] != 'o') && (field[c.ch - 'A'][c.num - 1] != ' ')) {
+	if ((field[c.ch - 'A'][c.num - 1] != SHIP_PART) && (field[c.ch - 'A'][c.num - 1] != EMPTY)) {
 		printf_s("\nДанная точка уже проверена. Введите новые координаты: ");
 		return getCoordinate(field);
 	}
 	return c;
 }
 
-
-int getType() {
-	int currType;
+int getType(enum squareStatus field[FIELD_SIZE][FIELD_SIZE], int shipsCount[]) {
+	enum Type currType;
 	char ch;
 	int x = scanf_s("%d%c", &currType, &ch);
 	while ((x != 2) || (currType < 1) || (currType > 4) || (ch != '\n')) {//если число не является допустимым для типа или было введено не только число
@@ -656,5 +528,36 @@ int getType() {
 		}
 		x = scanf_s("%d%c", &currType, &ch);//считываем новые данные
 	}
+	if (shipsCount[currType - 1] == 0) {
+		printf_s("Корабли данного типа закончились. Выберите другой тип: ");
+		return getType(field, shipsCount);
+	}
 	return currType;
+}
+
+void get2Coordinates(struct Coordinate* beginning, struct Coordinate* ending, enum squareStatus field[FIELD_SIZE][FIELD_SIZE], int currType) {//получение координаты начала и конца
+	printf_s("Укажите координаты начала корабля: ");
+	*beginning = getCoordinate(field);
+
+	printf_s("Укажите координаты конца корабля: ");
+	*ending = getCoordinate(field);
+
+	//////координаты должны быть на одной линии
+	if ((beginning -> ch != ending -> ch) && (beginning -> num != ending -> num)) {
+		printf_s("Координаты начала и конца корабля должны быть на одной линии.\n");
+		get2Coordinates(beginning, ending, field, currType);
+	}
+
+	/////////beginning<ending
+	while ((beginning -> ch > ending -> ch) || (beginning -> num > ending -> num)) {
+		printf_s("Координаты начала должны быть меньше координат конца корабля.\n");
+		get2Coordinates(beginning, ending, field, currType);
+	}
+
+	//////////проверка длины корабля 
+
+	while (getShipLen(*beginning, *ending) + 1 != currType) {
+		printf_s("Длина должна соответствовать типу %d, укажите другие координаты.\n", currType);
+		get2Coordinates(beginning, ending, field, currType);
+	}
 }
