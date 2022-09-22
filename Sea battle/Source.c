@@ -5,29 +5,29 @@
 
 int main() {
 	setlocale(LC_ALL, "RUS");
-	printf_s("Условные обозначения:\n");
-	printf_s("o - часть корабля\n");
-	printf_s(". - пустая клетка\n");
-	printf_s("x - повреждённая часть корабля\n");
-	printf_s("* - потопленный корабль\n");
-	enum squareStatus field[FIELD_SIZE][FIELD_SIZE];//поле игрока
+	printf_s("РЈСЃР»РѕРІРЅС‹Рµ РѕР±РѕР·РЅР°С‡РµРЅРёСЏ:\n");
+	printf_s("o - С‡Р°СЃС‚СЊ РєРѕСЂР°Р±Р»СЏ\n");
+	printf_s(". - РїСѓСЃС‚Р°СЏ РєР»РµС‚РєР°\n");
+	printf_s("x - РїРѕРІСЂРµР¶РґС‘РЅРЅР°СЏ С‡Р°СЃС‚СЊ РєРѕСЂР°Р±Р»СЏ\n");
+	printf_s("* - РїРѕС‚РѕРїР»РµРЅРЅС‹Р№ РєРѕСЂР°Р±Р»СЊ\n");
+	enum squareStatus field[FIELD_SIZE][FIELD_SIZE]; // РїРѕР»Рµ РёРіСЂРѕРєР°
 	initField(field);
 	printField(field, 1);
 
-	shipsArrangement(field);//расставляем корабли
+	shipsArrangement(field); // СЂР°СЃСЃС‚Р°РІР»СЏРµРј РєРѕСЂР°Р±Р»Рё
 
-	enum squareStatus botField[FIELD_SIZE][FIELD_SIZE];//поле бота
+	enum squareStatus botField[FIELD_SIZE][FIELD_SIZE]; // РїРѕР»Рµ Р±РѕС‚Р°
 	initField(botField);
-	fillBotField(botField);//заполняем поле бота
-	int playerShipsCount[] = { 4,3,2,1 };//оставшиеся корабли игрока
-	int botShipsCount[] = { 4,3,2,1 };//оставшиеся корабли противника
+	fillBotField(botField); // Р·Р°РїРѕР»РЅСЏРµРј РїРѕР»Рµ Р±РѕС‚Р°
+	int playerShipsCount[] = { 4,3,2,1 }; // РѕСЃС‚Р°РІС€РёРµСЃСЏ РєРѕСЂР°Р±Р»Рё РёРіСЂРѕРєР°
+	int botShipsCount[] = { 4,3,2,1 }; // РѕСЃС‚Р°РІС€РёРµСЃСЏ РєРѕСЂР°Р±Р»Рё РїСЂРѕС‚РёРІРЅРёРєР°
 	printGameSpace(field, botField, botShipsCount, playerShipsCount);
 
-	gameLoop(playerShipsCount, botShipsCount, field, botField);//игровой цикл
+	gameLoop(playerShipsCount, botShipsCount, field, botField); // РёРіСЂРѕРІРѕР№ С†РёРєР»
 
-	getResult(playerShipsCount);//определяем исход игры
+	getResult(playerShipsCount); // РѕРїСЂРµРґРµР»СЏРµРј РёСЃС…РѕРґ РёРіСЂС‹
 
-	exitGame();//запрашиваем символ для выхода
+	exitGame(); // Р·Р°РїСЂР°С€РёРІР°РµРј СЃРёРјРІРѕР» РґР»СЏ РІС‹С…РѕРґР°
 
 	return 0;
 }
